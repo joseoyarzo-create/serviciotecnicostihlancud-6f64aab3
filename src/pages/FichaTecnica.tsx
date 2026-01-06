@@ -30,7 +30,7 @@ const FichaTecnicaPage = () => {
   // Form state
   const [numeroBoleta, setNumeroBoleta] = useState('');
   const [fechaIngreso, setFechaIngreso] = useState<Date>(new Date());
-  const [fechaReparacion, setFechaReparacion] = useState<Date | null>(null);
+  const [fechaReparacion, setFechaReparacion] = useState<Date>(new Date());
   const [fechaEntrega, setFechaEntrega] = useState<Date | null>(null);
   const [clienteNombre, setClienteNombre] = useState('');
   const [clienteTelefono, setClienteTelefono] = useState('');
@@ -144,7 +144,7 @@ const FichaTecnicaPage = () => {
       setRepuestos([]);
       setServicios(DEFAULT_SERVICIOS);
       setFechaIngreso(new Date());
-      setFechaReparacion(null);
+      setFechaReparacion(new Date());
       setFechaEntrega(null);
       
       // Refresh clientes
@@ -218,30 +218,12 @@ const FichaTecnicaPage = () => {
               </div>
 
               <div className="input-group">
-                <Label className="input-label">Fecha de Reparación</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        'w-full justify-start text-left font-normal',
-                        !fechaReparacion && 'text-muted-foreground'
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {fechaReparacion ? format(fechaReparacion, 'dd/MM/yyyy', { locale: es }) : 'Seleccionar'}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
-                    <Calendar
-                      mode="single"
-                      selected={fechaReparacion ?? undefined}
-                      onSelect={(date) => setFechaReparacion(date ?? null)}
-                      initialFocus
-                      className="pointer-events-auto"
-                    />
-                  </PopoverContent>
-                </Popover>
+                <Label className="input-label">Fecha de Reparación (automática)</Label>
+                <Input 
+                  value={format(fechaReparacion, 'dd/MM/yyyy', { locale: es })} 
+                  disabled 
+                  className="bg-muted" 
+                />
               </div>
 
               <div className="input-group">
