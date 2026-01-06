@@ -1,6 +1,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { FichaTecnica } from '@/types';
+import stihlLogo from '@/assets/stihl-logo.jpg';
 
 const formatDate = (date: Date | null): string => {
   if (!date) return '';
@@ -19,6 +20,14 @@ const formatCurrency = (amount: number): string => {
   }).format(amount);
 };
 
+const generateFileName = (ficha: FichaTecnica): string => {
+  const boleta = ficha.numeroBoleta.trim();
+  const cliente = ficha.cliente.nombre.trim().replace(/\s+/g, '_').toUpperCase();
+  const modelo = ficha.modeloMaquina.trim().replace(/\s+/g, '_').toUpperCase();
+  const mecanico = ficha.tecnico.toUpperCase();
+  return `${boleta}_${cliente}_(${modelo})_${mecanico}`;
+};
+
 export const generatePdfDocument = async (ficha: FichaTecnica): Promise<void> => {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -28,146 +37,231 @@ export const generatePdfDocument = async (ficha: FichaTecnica): Promise<void> =>
     0
   );
 
-  let yPos = 15;
+  let yPos = 12;
 
-  // Header
-  doc.setFontSize(18);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(243, 112, 33); // STIHL Orange
-  doc.text('SERVICIO TÉCNICO', pageWidth / 2, yPos, { align: 'center' });
-  
-  yPos += 8;
+  // Title - SERVICIO TECNICO underlined
   doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
   doc.setTextColor(0, 0, 0);
-  doc.text('DISTRIBUIDOR AUTORIZADO', pageWidth / 2, yPos, { align: 'center' });
+  doc.text('SERVICIO TECNICO.', pageWidth / 2, yPos, { align: 'center' });
+  doc.setLineWidth(0.5);
+  const titleWidth = doc.getTextWidth('SERVICIO TECNICO.');
+  doc.line((pageWidth - titleWidth) / 2, yPos + 1, (pageWidth + titleWidth) / 2, yPos + 1);
+
+  yPos += 8;
+
+  // Header section: Left side (logo + company info) | Right side (N° Servicio, fechas)
+  const leftColX = 14;
+  const rightColX = 120;
   
-  yPos += 7;
-  doc.setFontSize(12);
-  doc.setFont('helvetica', 'bold');
-  doc.text('STIHL ANCUD', pageWidth / 2, yPos, { align: 'center' });
-  
-  yPos += 5;
+  // Left side - DISTRIBUIDOR AUTORIZADO
   doc.setFontSize(10);
-  doc.setFont('helvetica', 'normal');
-  doc.text('COMERCIAL SOTAVENTO LTDA.', pageWidth / 2, yPos, { align: 'center' });
-  
-  yPos += 5;
-  doc.text('Casa matriz: Pudeto 351 - Ancud', pageWidth / 2, yPos, { align: 'center' });
-  
-  yPos += 5;
-  doc.text('Fono Fax: 652622214', pageWidth / 2, yPos, { align: 'center' });
-
-  // Nº Servicio
-  yPos += 10;
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(12);
-  doc.text(`Nº SERVICIO: ${ficha.numeroServicio}`, pageWidth - 15, yPos, { align: 'right' });
+  doc.text('DISTRIBUIDOR AUTORIZADO', leftColX, yPos);
+  
+  // Right side - N° SERVICIO box
+  doc.setFontSize(9);
+  doc.text('Nº SERVICIO:', rightColX, yPos);
+  doc.rect(rightColX + 25, yPos - 4, 50, 6);
+  doc.setFont('helvetica', 'normal');
+  doc.text(ficha.numeroServicio, rightColX + 27, yPos);
 
-  // Datos del Equipo
+  yPos += 6;
+  
+  // Load and add logo
+  try {
+    doc.addImage(stihlLogo, 'JPEG', leftColX, yPos - 2, 30, 10);
+  } catch (e) {
+    // Logo fallback
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text('STIHL', leftColX, yPos + 5);
+  }
+  
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'bold');
+  doc.text('ANCUD', leftColX + 32, yPos + 4);
+
+  // Right side - FECHA INGRESO
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'bold');
+  doc.text('FECHA INGRESO', rightColX, yPos);
+  doc.rect(rightColX + 30, yPos - 4, 45, 6);
+  doc.setFont('helvetica', 'normal');
+  doc.text(formatDate(ficha.fechaIngreso), rightColX + 32, yPos);
+
+  yPos += 6;
+  
+  // COMERCIAL SOTAVENTO LTDA.
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'bold');
+  doc.text('COMERCIAL SOTAVENTO LDTA.', leftColX, yPos + 4);
+  
+  // Right side - FECHA REPARACIÓN
+  doc.text('FECHA REPARACIÓN', rightColX, yPos);
+  doc.rect(rightColX + 38, yPos - 4, 37, 6);
+  doc.setFont('helvetica', 'normal');
+  doc.text(formatDate(ficha.fechaReparacion), rightColX + 40, yPos);
+
+  yPos += 5;
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Casa matriz: Pudeto5 351-Ancud', leftColX, yPos + 4);
+  yPos += 4;
+  doc.text('Fono Fax: 652622214', leftColX, yPos + 4);
+
   yPos += 10;
+
+  // DATOS DEL EQUIPO table
   autoTable(doc, {
     startY: yPos,
-    head: [[{ content: 'DATOS DEL EQUIPO', colSpan: 4, styles: { halign: 'center', fillColor: [243, 112, 33] } }]],
+    head: [[{ content: 'DATOS DEL EQUIPO', colSpan: 4, styles: { halign: 'left', fillColor: [230, 230, 230], textColor: 0 } }]],
     body: [
-      ['MODELO:', ficha.modeloMaquina, 'N° SERIE:', ficha.numeroSerie],
-      ['NOMBRE:', ficha.cliente.nombre, 'TELÉFONO:', ficha.cliente.telefono],
-      ['N° BOLETA:', ficha.numeroBoleta, 'FECHA INGRESO:', formatDate(ficha.fechaIngreso)],
+      [{ content: 'MODELO', styles: { fontStyle: 'bold' } }, ficha.modeloMaquina, { content: 'N° SERIE', styles: { fontStyle: 'bold' } }, ficha.numeroSerie],
+      [{ content: 'NOMBRE', styles: { fontStyle: 'bold' } }, ficha.cliente.nombre, '', ''],
+      [{ content: 'TELEFONO', styles: { fontStyle: 'bold' } }, ficha.cliente.telefono, { content: 'N° BOLETA', styles: { fontStyle: 'bold' } }, ficha.numeroBoleta],
     ],
     theme: 'grid',
-    styles: { fontSize: 9 },
-    headStyles: { fillColor: [243, 112, 33], textColor: 255 },
+    styles: { fontSize: 8, cellPadding: 1.5, textColor: 0, lineColor: 0, lineWidth: 0.2 },
+    headStyles: { fillColor: [230, 230, 230], textColor: 0, fontStyle: 'bold' },
     columnStyles: {
-      0: { fontStyle: 'bold', cellWidth: 30 },
-      2: { fontStyle: 'bold', cellWidth: 35 },
+      0: { cellWidth: 25 },
+      1: { cellWidth: 60 },
+      2: { cellWidth: 25 },
+      3: { cellWidth: 55 },
     },
   });
 
-  // Datos de la Máquina
-  yPos = (doc as any).lastAutoTable.finalY + 5;
+  // DATOS DE LA MAQUINA
+  yPos = (doc as any).lastAutoTable.finalY + 2;
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'bold');
+  doc.text('DATOS DE LA MAQUINA', 14, yPos + 4);
+  
+  yPos += 5;
   autoTable(doc, {
     startY: yPos,
-    head: [[{ content: 'DATOS DE LA MÁQUINA', colSpan: 2, styles: { halign: 'center', fillColor: [243, 112, 33] } }]],
     body: [
-      ['TIPO DE AVERÍA:', ficha.tipoAveria || '-'],
+      [{ content: 'TIPO DE AVERIA', styles: { fontStyle: 'bold', cellWidth: 30 } }, ficha.tipoAveria || ''],
     ],
     theme: 'grid',
-    styles: { fontSize: 9 },
-    headStyles: { fillColor: [243, 112, 33], textColor: 255 },
+    styles: { fontSize: 8, cellPadding: 1.5, textColor: 0, lineColor: 0, lineWidth: 0.2 },
+  });
+
+  // PROCEDIMIENTO / PRESUPUESTO / REPARACION header
+  yPos = (doc as any).lastAutoTable.finalY + 2;
+  autoTable(doc, {
+    startY: yPos,
+    body: [
+      [
+        { content: 'PROCEDIMIENTO', styles: { fontStyle: 'bold', halign: 'center' } },
+        { content: 'PRESUPUESTO', styles: { fontStyle: 'bold', halign: 'center' } },
+        { content: '', styles: { cellWidth: 30 } },
+        { content: 'REPARACION', styles: { fontStyle: 'bold', halign: 'center' } },
+        { content: 'X', styles: { fontStyle: 'bold', halign: 'center', cellWidth: 12 } },
+      ],
+    ],
+    theme: 'grid',
+    styles: { fontSize: 8, cellPadding: 1.5, textColor: 0, lineColor: 0, lineWidth: 0.2 },
+  });
+
+  // Repuestos table
+  yPos = (doc as any).lastAutoTable.finalY;
+  const repuestosData = ficha.repuestos.length > 0 
+    ? ficha.repuestos.map(r => [
+        r.cantidad.toString(),
+        r.codigo,
+        r.nombre,
+        formatCurrency((r.precioEditado ?? r.precio) * r.cantidad),
+      ])
+    : [['', '', '', '']];
+  
+  // Add empty rows if less than 3 repuestos
+  while (repuestosData.length < 3) {
+    repuestosData.push(['', '', '', '']);
+  }
+
+  autoTable(doc, {
+    startY: yPos,
+    head: [['CANT', 'CODIGO', 'REPUESTO', 'PRECIO']],
+    body: repuestosData,
+    theme: 'grid',
+    styles: { fontSize: 8, cellPadding: 1.5, textColor: 0, lineColor: 0, lineWidth: 0.2 },
+    headStyles: { fillColor: [255, 255, 255], textColor: 0, fontStyle: 'bold' },
     columnStyles: {
-      0: { fontStyle: 'bold', cellWidth: 40 },
+      0: { cellWidth: 15, halign: 'center' },
+      1: { cellWidth: 35 },
+      2: { cellWidth: 90 },
+      3: { cellWidth: 25, halign: 'right' },
     },
   });
 
-  // Repuestos
-  if (ficha.repuestos.length > 0) {
-    yPos = (doc as any).lastAutoTable.finalY + 5;
-    const repuestosData = ficha.repuestos.map(r => [
-      r.cantidad.toString(),
-      r.codigo,
-      r.nombre,
-      formatCurrency((r.precioEditado ?? r.precio) * r.cantidad),
-    ]);
-    repuestosData.push(['', '', 'TOTAL:', formatCurrency(totalRepuestos)]);
+  // TOTAL row
+  yPos = (doc as any).lastAutoTable.finalY;
+  autoTable(doc, {
+    startY: yPos,
+    body: [
+      [{ content: 'TOTAL:', styles: { fontStyle: 'bold' } }, formatCurrency(totalRepuestos)],
+    ],
+    theme: 'grid',
+    styles: { fontSize: 8, cellPadding: 1.5, textColor: 0, lineColor: 0, lineWidth: 0.2 },
+    columnStyles: {
+      0: { cellWidth: 140 },
+      1: { cellWidth: 25, halign: 'right' },
+    },
+  });
 
-    autoTable(doc, {
-      startY: yPos,
-      head: [[{ content: 'PROCEDIMIENTO', colSpan: 4, styles: { halign: 'center', fillColor: [243, 112, 33] } }],
-             ['CANT', 'CÓDIGO', 'REPUESTO', 'PRECIO']],
-      body: repuestosData,
-      theme: 'grid',
-      styles: { fontSize: 9 },
-      headStyles: { fillColor: [243, 112, 33], textColor: 255 },
-      columnStyles: {
-        0: { cellWidth: 15, halign: 'center' },
-        1: { cellWidth: 35 },
-        3: { cellWidth: 30, halign: 'right' },
-      },
-      didParseCell: (data) => {
-        if (data.row.index === repuestosData.length - 1 && data.section === 'body') {
-          data.cell.styles.fontStyle = 'bold';
-        }
-      },
-    });
-  }
+  // SERVICIO table - all REVISION marked as SÍ
+  yPos = (doc as any).lastAutoTable.finalY + 2;
+  const serviciosData = ficha.servicios.map(s => [
+    s.nombre,
+    'SI', // REVISION always SÍ
+    s.reparacion ? 'SI' : 'NO',
+  ]);
 
-  // Servicios
-  const serviciosData = ficha.servicios
-    .filter(s => s.revision || s.reparacion)
-    .map(s => [s.nombre, s.revision ? 'SÍ' : '-', s.reparacion ? 'SÍ' : '-']);
+  autoTable(doc, {
+    startY: yPos,
+    head: [['SERVICIO', 'REVISION', 'REPARACION/CAMBIO']],
+    body: serviciosData,
+    theme: 'grid',
+    styles: { fontSize: 7, cellPadding: 1, textColor: 0, lineColor: 0, lineWidth: 0.2 },
+    headStyles: { fillColor: [230, 230, 230], textColor: 0, fontStyle: 'bold' },
+    columnStyles: {
+      0: { cellWidth: 100 },
+      1: { cellWidth: 30, halign: 'center' },
+      2: { cellWidth: 35, halign: 'center' },
+    },
+  });
 
-  if (serviciosData.length > 0) {
-    yPos = (doc as any).lastAutoTable.finalY + 5;
-    autoTable(doc, {
-      startY: yPos,
-      head: [[{ content: 'SERVICIO', colSpan: 3, styles: { halign: 'center', fillColor: [243, 112, 33] } }],
-             ['', 'REVISIÓN', 'REPARACIÓN/CAMBIO']],
-      body: serviciosData,
-      theme: 'grid',
-      styles: { fontSize: 9 },
-      headStyles: { fillColor: [243, 112, 33], textColor: 255 },
-      columnStyles: {
-        1: { halign: 'center', cellWidth: 30 },
-        2: { halign: 'center', cellWidth: 40 },
-      },
-    });
-  }
+  // RECOMENDACIONES section
+  yPos = (doc as any).lastAutoTable.finalY + 2;
+  autoTable(doc, {
+    startY: yPos,
+    body: [
+      [{ content: 'RECOMENDACIONES:', styles: { fontStyle: 'bold' } }],
+      [''],
+    ],
+    theme: 'grid',
+    styles: { fontSize: 8, cellPadding: 2, textColor: 0, lineColor: 0, lineWidth: 0.2 },
+  });
 
   // Footer
-  yPos = (doc as any).lastAutoTable.finalY + 15;
-  
-  doc.setFontSize(11);
-  doc.setFont('helvetica', 'bold');
-  doc.text('REPARACIÓN GARANTIZADA POR 10 DÍAS DE LA FECHA DE RETIRO', pageWidth / 2, yPos, { align: 'center' });
+  yPos = (doc as any).lastAutoTable.finalY + 3;
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'normal');
+  doc.text('REPARACION GARATIZADA POR 10 DIAS DE LA FECHA DE RETIRO', 14, yPos);
+  yPos += 4;
+  doc.text(`FECHA DE ENTREGA: ${formatDate(ficha.fechaEntrega)}`, 14, yPos);
 
-  yPos += 10;
-  doc.setFontSize(10);
-  doc.text(`FECHA DE ENTREGA: ${formatDate(ficha.fechaEntrega)}`, 15, yPos);
-
+  // Page 2 - Mecánico encargado (or same page if fits)
   yPos += 8;
-  doc.text(`MECÁNICO ENCARGADO: ${ficha.tecnico}`, 15, yPos);
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'bold');
+  doc.text(`MECÁNICO ENCARGADO: ${ficha.tecnico === 'JORGE' ? 'JORGE ALVARADO' : 'JEAN'}`, 14, yPos);
 
-  // Save
-  doc.save(`Ficha_${ficha.numeroServicio}_${ficha.cliente.nombre}.pdf`);
+  // Save with custom filename
+  const fileName = generateFileName(ficha);
+  doc.save(`${fileName}.pdf`);
 };
 
 export const printFicha = (ficha: FichaTecnica): void => {
@@ -176,123 +270,136 @@ export const printFicha = (ficha: FichaTecnica): void => {
     0
   );
 
+  // All servicios with REVISION always marked as SÍ
   const serviciosHtml = ficha.servicios
-    .filter(s => s.revision || s.reparacion)
     .map(s => `
       <tr>
         <td>${s.nombre}</td>
-        <td style="text-align: center;">${s.revision ? 'SÍ' : '-'}</td>
-        <td style="text-align: center;">${s.reparacion ? 'SÍ' : '-'}</td>
+        <td style="text-align: center;">SI</td>
+        <td style="text-align: center;">${s.reparacion ? 'SI' : 'NO'}</td>
       </tr>
     `).join('');
 
-  const repuestosHtml = ficha.repuestos.map(r => `
-    <tr>
-      <td style="text-align: center;">${r.cantidad}</td>
-      <td>${r.codigo}</td>
-      <td>${r.nombre}</td>
-      <td style="text-align: right;">${formatCurrency((r.precioEditado ?? r.precio) * r.cantidad)}</td>
-    </tr>
-  `).join('');
+  const repuestosHtml = ficha.repuestos.length > 0 
+    ? ficha.repuestos.map(r => `
+      <tr>
+        <td style="text-align: center;">${r.cantidad}</td>
+        <td>${r.codigo}</td>
+        <td>${r.nombre}</td>
+        <td style="text-align: right;">${formatCurrency((r.precioEditado ?? r.precio) * r.cantidad)}</td>
+      </tr>
+    `).join('')
+    : '<tr><td></td><td></td><td></td><td></td></tr>';
+
+  const fileName = generateFileName(ficha);
 
   const printContent = `
     <!DOCTYPE html>
     <html>
     <head>
-      <title>Ficha Técnica - ${ficha.numeroServicio}</title>
+      <title>${fileName}</title>
       <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: Arial, sans-serif; font-size: 12px; padding: 20px; }
-        .header { text-align: center; margin-bottom: 20px; }
-        .header h1 { color: #F37021; font-size: 18px; margin-bottom: 5px; }
-        .header h2 { font-size: 14px; margin-bottom: 3px; }
-        .header p { font-size: 10px; color: #666; }
-        .servicio-num { text-align: right; font-weight: bold; margin-bottom: 15px; }
-        table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
-        th, td { border: 1px solid #333; padding: 6px 8px; }
-        th { background: #F37021; color: white; text-align: left; }
-        .section-title { background: #F37021; color: white; text-align: center; font-weight: bold; }
-        .label { font-weight: bold; width: 120px; }
-        .footer { margin-top: 30px; }
-        .footer p { margin-bottom: 8px; }
-        .garantia { font-weight: bold; text-align: center; margin: 20px 0; font-size: 11px; }
-        .total-row { font-weight: bold; background: #f5f5f5; }
+        body { font-family: Arial, sans-serif; font-size: 10px; padding: 10px; color: #000; }
+        .title { text-align: center; font-size: 14px; font-weight: bold; text-decoration: underline; margin-bottom: 10px; }
+        .header { display: flex; justify-content: space-between; margin-bottom: 10px; }
+        .header-left { flex: 1; }
+        .header-right { width: 200px; }
+        .header-right table { width: 100%; border-collapse: collapse; }
+        .header-right td { border: 1px solid #000; padding: 2px 5px; font-size: 9px; }
+        .company-name { font-weight: bold; font-size: 10px; margin-bottom: 2px; }
+        .stihl-logo { font-weight: bold; font-size: 16px; font-style: italic; }
+        .company-info { font-size: 8px; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 5px; }
+        th, td { border: 1px solid #000; padding: 2px 4px; font-size: 8px; }
+        th { background: #e6e6e6; text-align: left; font-weight: bold; }
+        .section-title { background: #e6e6e6; font-weight: bold; text-align: left; }
+        .label { font-weight: bold; width: 80px; }
+        .footer { margin-top: 10px; font-size: 8px; }
+        .mecanico { font-size: 10px; font-weight: bold; margin-top: 10px; }
         @media print {
-          body { padding: 10px; }
-          @page { margin: 1cm; }
+          body { padding: 5px; }
+          @page { margin: 0.5cm; size: A4; }
         }
       </style>
     </head>
     <body>
+      <div class="title">SERVICIO TECNICO.</div>
+      
       <div class="header">
-        <h1>SERVICIO TÉCNICO</h1>
-        <h2>DISTRIBUIDOR AUTORIZADO</h2>
-        <h2>STIHL ANCUD</h2>
-        <p>COMERCIAL SOTAVENTO LTDA.</p>
-        <p>Casa matriz: Pudeto 351 - Ancud | Fono Fax: 652622214</p>
+        <div class="header-left">
+          <div class="company-name">DISTRIBUIDOR AUTORIZADO</div>
+          <div><span class="stihl-logo">STIHL</span> ANCUD</div>
+          <div class="company-name">COMERCIAL SOTAVENTO LDTA.</div>
+          <div class="company-info">Casa matriz: Pudeto5 351-Ancud</div>
+          <div class="company-info">Fono Fax: 652622214</div>
+        </div>
+        <div class="header-right">
+          <table>
+            <tr><td class="label">Nº SERVICIO:</td><td>${ficha.numeroServicio}</td></tr>
+            <tr><td class="label">FECHA INGRESO</td><td>${formatDate(ficha.fechaIngreso)}</td></tr>
+            <tr><td class="label">FECHA REPARACIÓN</td><td>${formatDate(ficha.fechaReparacion)}</td></tr>
+          </table>
+        </div>
       </div>
-
-      <div class="servicio-num">Nº SERVICIO: ${ficha.numeroServicio}</div>
 
       <table>
         <tr><td colspan="4" class="section-title">DATOS DEL EQUIPO</td></tr>
         <tr>
-          <td class="label">MODELO:</td><td>${ficha.modeloMaquina}</td>
-          <td class="label">N° SERIE:</td><td>${ficha.numeroSerie}</td>
+          <td class="label">MODELO</td><td>${ficha.modeloMaquina}</td>
+          <td class="label">N° SERIE</td><td>${ficha.numeroSerie}</td>
         </tr>
         <tr>
-          <td class="label">NOMBRE:</td><td>${ficha.cliente.nombre}</td>
-          <td class="label">TELÉFONO:</td><td>${ficha.cliente.telefono}</td>
+          <td class="label">NOMBRE</td><td colspan="3">${ficha.cliente.nombre}</td>
         </tr>
         <tr>
-          <td class="label">N° BOLETA:</td><td>${ficha.numeroBoleta}</td>
-          <td class="label">FECHA INGRESO:</td><td>${formatDate(ficha.fechaIngreso)}</td>
+          <td class="label">TELEFONO</td><td>${ficha.cliente.telefono}</td>
+          <td class="label">N° BOLETA</td><td>${ficha.numeroBoleta}</td>
         </tr>
       </table>
 
       <table>
-        <tr><td colspan="2" class="section-title">DATOS DE LA MÁQUINA</td></tr>
+        <tr><td colspan="2" class="section-title">DATOS DE LA MAQUINA</td></tr>
         <tr>
-          <td class="label">TIPO DE AVERÍA:</td>
-          <td>${ficha.tipoAveria || '-'}</td>
+          <td class="label">TIPO DE AVERIA</td>
+          <td>${ficha.tipoAveria || ''}</td>
         </tr>
       </table>
 
-      ${ficha.repuestos.length > 0 ? `
       <table>
-        <tr><td colspan="4" class="section-title">PROCEDIMIENTO</td></tr>
         <tr>
-          <th style="width: 50px;">CANT</th>
-          <th style="width: 100px;">CÓDIGO</th>
+          <th>CANT</th>
+          <th>CODIGO</th>
           <th>REPUESTO</th>
-          <th style="width: 100px;">PRECIO</th>
+          <th>PRECIO</th>
         </tr>
         ${repuestosHtml}
-        <tr class="total-row">
+        <tr style="font-weight: bold;">
           <td colspan="3" style="text-align: right;">TOTAL:</td>
           <td style="text-align: right;">${formatCurrency(totalRepuestos)}</td>
         </tr>
       </table>
-      ` : ''}
 
-      ${serviciosHtml ? `
       <table>
-        <tr><td colspan="3" class="section-title">SERVICIO</td></tr>
         <tr>
           <th>SERVICIO</th>
-          <th style="width: 80px;">REVISIÓN</th>
-          <th style="width: 120px;">REPARACIÓN/CAMBIO</th>
+          <th style="width: 60px;">REVISION</th>
+          <th style="width: 80px;">REPARACION/CAMBIO</th>
         </tr>
         ${serviciosHtml}
       </table>
-      ` : ''}
 
-      <p class="garantia">REPARACIÓN GARANTIZADA POR 10 DÍAS DE LA FECHA DE RETIRO</p>
+      <table>
+        <tr><td class="section-title">RECOMENDACIONES:</td></tr>
+        <tr><td style="height: 15px;"></td></tr>
+      </table>
 
       <div class="footer">
-        <p><strong>FECHA DE ENTREGA:</strong> ${formatDate(ficha.fechaEntrega)}</p>
-        <p><strong>MECÁNICO ENCARGADO:</strong> ${ficha.tecnico}</p>
+        <p>REPARACION GARATIZADA POR 10 DIAS DE LA FECHA DE RETIRO</p>
+        <p>FECHA DE ENTREGA: ${formatDate(ficha.fechaEntrega)}</p>
       </div>
+
+      <div class="mecanico">MECÁNICO ENCARGADO: ${ficha.tecnico === 'JORGE' ? 'JORGE ALVARADO' : 'JEAN'}</div>
     </body>
     </html>
   `;
