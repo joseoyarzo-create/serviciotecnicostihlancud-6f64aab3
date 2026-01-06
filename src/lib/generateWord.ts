@@ -352,11 +352,11 @@ export const generateWordDocument = async (ficha: FichaTecnica): Promise<void> =
               borders: createTableBorders(),
             }),
             new TableCell({
-              children: [new Paragraph({ text: s.revision ? 'SÍ' : '-' })],
+              children: [new Paragraph({ text: 'SI' })], // Revisión siempre SÍ
               borders: createTableBorders(),
             }),
             new TableCell({
-              children: [new Paragraph({ text: s.reparacion ? 'SÍ' : '-' })],
+              children: [new Paragraph({ text: s.reparacion ? 'SI' : 'NO' })],
               borders: createTableBorders(),
             }),
           ],
@@ -411,5 +411,14 @@ export const generateWordDocument = async (ficha: FichaTecnica): Promise<void> =
   });
 
   const blob = await Packer.toBlob(doc);
-  saveAs(blob, `Ficha_${ficha.numeroServicio}_${ficha.cliente.nombre}.docx`);
+  const fileName = generateFileName(ficha);
+  saveAs(blob, `${fileName}.docx`);
+};
+
+const generateFileName = (ficha: FichaTecnica): string => {
+  const boleta = ficha.numeroBoleta.trim();
+  const cliente = ficha.cliente.nombre.trim().replace(/\s+/g, '_').toUpperCase();
+  const modelo = ficha.modeloMaquina.trim().replace(/\s+/g, '_').toUpperCase();
+  const mecanico = ficha.tecnico.toUpperCase();
+  return `${boleta}_${cliente}_(${modelo})_${mecanico}`;
 };
