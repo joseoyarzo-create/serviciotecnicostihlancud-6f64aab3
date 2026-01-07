@@ -264,17 +264,35 @@ export const generatePdfDocument = async (ficha: FichaTecnica): Promise<void> =>
   doc.save(`${fileName}.pdf`);
 };
 
+// HTML escape function to prevent XSS
+const escapeHtml = (text: string | null | undefined): string => {
+  if (!text) return '';
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+};
+
 export const printFicha = (ficha: FichaTecnica): void => {
   const totalRepuestos = ficha.repuestos.reduce(
     (sum, r) => sum + (r.precioEditado ?? r.precio) * r.cantidad,
     0
   );
 
+  // Escape all user-controlled data
+  const safeNumeroServicio = escapeHtml(ficha.numeroServicio);
+  const safeModeloMaquina = escapeHtml(ficha.modeloMaquina);
+  const safeNumeroSerie = escapeHtml(ficha.numeroSerie);
+  const safeClienteNombre = escapeHtml(ficha.cliente.nombre);
+  const safeClienteTelefono = escapeHtml(ficha.cliente.telefono);
+  const safeNumeroBoleta = escapeHtml(ficha.numeroBoleta);
+  const safeTipoAveria = escapeHtml(ficha.tipoAveria);
+  const safeTecnico = escapeHtml(ficha.tecnico);
+
   // All servicios with REVISION always marked as SÍ
   const serviciosHtml = ficha.servicios
     .map(s => `
       <tr>
-        <td>${s.nombre}</td>
+        <td>${escapeHtml(s.nombre)}</td>
         <td style="text-align: center;">SI</td>
         <td style="text-align: center;">${s.reparacion ? 'SI' : 'NO'}</td>
       </tr>
@@ -283,9 +301,9 @@ export const printFicha = (ficha: FichaTecnica): void => {
   const repuestosHtml = ficha.repuestos.length > 0 
     ? ficha.repuestos.map(r => `
       <tr>
-        <td style="text-align: center;">${r.cantidad}</td>
-        <td>${r.codigo}</td>
-        <td>${r.nombre}</td>
+        <td style="text-align: center;">${escapeHtml(r.cantidad.toString())}</td>
+        <td>${escapeHtml(r.codigo)}</td>
+        <td>${escapeHtml(r.nombre)}</td>
         <td style="text-align: right;">${formatCurrency((r.precioEditado ?? r.precio) * r.cantidad)}</td>
       </tr>
     `).join('')
@@ -297,7 +315,7 @@ export const printFicha = (ficha: FichaTecnica): void => {
     <!DOCTYPE html>
     <html>
     <head>
-      <title>${fileName}</title>
+      <title>${escapeHtml(fileName)}</title>
       <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: Arial, sans-serif; font-size: 10px; padding: 10px; color: #000; }
@@ -336,7 +354,7 @@ export const printFicha = (ficha: FichaTecnica): void => {
         </div>
         <div class="header-right">
           <table>
-            <tr><td class="label">Nº SERVICIO:</td><td>${ficha.numeroServicio}</td></tr>
+            <tr><td class="label">Nº SERVICIO:</td><td>${safeNumeroServicio}</td></tr>
             <tr><td class="label">FECHA INGRESO</td><td>${formatDate(ficha.fechaIngreso)}</td></tr>
             <tr><td class="label">FECHA REPARACIÓN</td><td>${formatDate(ficha.fechaReparacion)}</td></tr>
           </table>
@@ -346,15 +364,15 @@ export const printFicha = (ficha: FichaTecnica): void => {
       <table>
         <tr><td colspan="4" class="section-title">DATOS DEL EQUIPO</td></tr>
         <tr>
-          <td class="label">MODELO</td><td>${ficha.modeloMaquina}</td>
-          <td class="label">N° SERIE</td><td>${ficha.numeroSerie}</td>
+          <td class="label">MODELO</td><td>${safeModeloMaquina}</td>
+          <td class="label">N° SERIE</td><td>${safeNumeroSerie}</td>
         </tr>
         <tr>
-          <td class="label">NOMBRE</td><td colspan="3">${ficha.cliente.nombre}</td>
+          <td class="label">NOMBRE</td><td colspan="3">${safeClienteNombre}</td>
         </tr>
         <tr>
-          <td class="label">TELEFONO</td><td>${ficha.cliente.telefono}</td>
-          <td class="label">N° BOLETA</td><td>${ficha.numeroBoleta}</td>
+          <td class="label">TELEFONO</td><td>${safeClienteTelefono}</td>
+          <td class="label">N° BOLETA</td><td>${safeNumeroBoleta}</td>
         </tr>
       </table>
 
@@ -362,7 +380,7 @@ export const printFicha = (ficha: FichaTecnica): void => {
         <tr><td colspan="2" class="section-title">DATOS DE LA MAQUINA</td></tr>
         <tr>
           <td class="label">TIPO DE AVERIA</td>
-          <td>${ficha.tipoAveria || ''}</td>
+          <td>${safeTipoAveria}</td>
         </tr>
       </table>
 
@@ -399,7 +417,7 @@ export const printFicha = (ficha: FichaTecnica): void => {
         <p>FECHA DE ENTREGA: ${formatDate(ficha.fechaEntrega)}</p>
       </div>
 
-      <div class="mecanico">MECÁNICO ENCARGADO: ${ficha.tecnico === 'JORGE' ? 'JORGE ALVARADO' : 'JEAN'}</div>
+      <div class="mecanico">MECÁNICO ENCARGADO: ${safeTecnico === 'JORGE' ? 'JORGE ALVARADO' : 'JEAN'}</div>
     </body>
     </html>
   `;
