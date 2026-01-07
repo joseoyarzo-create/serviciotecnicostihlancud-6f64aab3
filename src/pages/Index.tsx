@@ -219,6 +219,12 @@ const Index = () => {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
+                              <DropdownMenuItem asChild>
+                                <Link to={`/ficha-tecnica/${ficha.id}`} className="flex items-center cursor-pointer">
+                                  <Edit className="mr-2 h-4 w-4" />
+                                  Editar
+                                </Link>
+                              </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => handleDownloadWord(ficha)}>
                                 <FileText className="mr-2 h-4 w-4" />
                                 Descargar Word

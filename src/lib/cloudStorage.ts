@@ -179,6 +179,40 @@ export const getFichas = async (): Promise<FichaTecnica[]> => {
   }));
 };
 
+export const getFichaById = async (id: string): Promise<FichaTecnica | null> => {
+  const { data, error } = await supabase
+    .from('fichas')
+    .select('*')
+    .eq('id', id)
+    .single();
+  
+  if (error) {
+    console.error('Error fetching ficha:', error);
+    return null;
+  }
+  
+  return {
+    id: data.id,
+    numeroBoleta: data.numero_boleta,
+    numeroServicio: data.numero_boleta,
+    fechaIngreso: new Date(data.fecha_ingreso),
+    fechaReparacion: data.fecha_reparacion ? new Date(data.fecha_reparacion) : null,
+    fechaEntrega: data.fecha_entrega ? new Date(data.fecha_entrega) : null,
+    cliente: {
+      id: data.id,
+      nombre: data.cliente_nombre,
+      telefono: data.cliente_telefono || '',
+    },
+    modeloMaquina: data.modelo_maquina,
+    numeroSerie: data.numero_serie || '',
+    tipoAveria: data.observaciones || '',
+    repuestos: (Array.isArray(data.repuestos) ? data.repuestos : []) as unknown as RepuestoFicha[],
+    servicios: (Array.isArray(data.servicios) ? data.servicios : []) as unknown as ServicioItem[],
+    recomendaciones: 'REPARACIÓN GARANTIZADA POR 10 DÍAS DE LA FECHA DE RETIRO',
+    tecnico: data.mecanico as 'JORGE' | 'JEAN',
+  };
+};
+
 export const saveFicha = async (ficha: FichaTecnica): Promise<void> => {
   const fichaData = {
     numero_boleta: ficha.numeroBoleta,

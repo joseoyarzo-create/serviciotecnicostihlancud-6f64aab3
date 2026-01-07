@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { FichaTecnica, Cliente, RepuestoFicha, Tecnico } from '@/types';
-import { getClientes, saveCliente, saveFicha, generateId, getModelos, saveModelo } from '@/lib/cloudStorage';
+import { getClientes, saveCliente, saveFicha, generateId, getModelos, saveModelo, getFichaById } from '@/lib/cloudStorage';
 import { generateWordDocument } from '@/lib/generateWord';
 import { generatePdfDocument, printFicha } from '@/lib/generatePdf';
 import { Input } from '@/components/ui/input';
@@ -21,10 +22,13 @@ import { CalendarIcon, FileText, Save, User, Wrench, FileDown, Printer } from 'l
 import { cn } from '@/lib/utils';
 
 const FichaTecnicaPage = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [modelos, setModelos] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isFetching, setIsFetching] = useState(!!id);
   const [exportType, setExportType] = useState<'word' | 'pdf' | 'print'>('word');
 
   // Form state
@@ -44,7 +48,39 @@ const FichaTecnicaPage = () => {
 
   useEffect(() => {
     loadData();
-  }, []);
+    if (id) {
+      loadFicha(id);
+    }
+  }, [id]);
+
+  const loadFicha = async (fichaId: string) => {
+    try {
+      const ficha = await getFichaById(fichaId);
+      if (ficha) {
+        setNumeroBoleta(ficha.numeroBoleta);
+        setFechaIngreso(ficha.fechaIngreso);
+        setFechaReparacion(ficha.fechaReparacion || new Date());
+        setFechaEntrega(ficha.fechaEntrega);
+        setClienteNombre(ficha.cliente.nombre);
+        setClienteTelefono(ficha.cliente.telefono);
+        setSelectedClienteId(ficha.cliente.id);
+        setModeloMaquina(ficha.modeloMaquina);
+        setNumeroSerie(ficha.numeroSerie);
+        setTipoAveria(ficha.tipoAveria);
+        setRepuestos(ficha.repuestos);
+        setServicios(ficha.servicios.length > 0 ? ficha.servicios : DEFAULT_SERVICIOS);
+        setTecnico(ficha.tecnico);
+      } else {
+        toast({ title: 'Error', description: 'Ficha no encontrada', variant: 'destructive' });
+        navigate('/');
+      }
+    } catch (error) {
+      console.error('Error loading ficha:', error);
+      toast({ title: 'Error', description: 'Error al cargar la ficha', variant: 'destructive' });
+    } finally {
+      setIsFetching(false);
+    }
+  };
 
   const loadData = async () => {
     try {
@@ -116,7 +152,7 @@ const FichaTecnicaPage = () => {
       }
 
       const ficha: FichaTecnica = {
-        id: generateId(),
+        id: id || generateId(),
         numeroBoleta: numeroBoleta.trim(),
         numeroServicio: numeroBoleta.trim(),
         fechaIngreso,
@@ -137,31 +173,38 @@ const FichaTecnicaPage = () => {
       // Generate document based on type
       if (type === 'word') {
         await generateWordDocument(ficha);
-        toast({ title: 'Éxito', description: 'Ficha guardada y documento Word generado' });
+        toast({ title: 'Éxito', description: `Ficha ${id ? 'actualizada' : 'guardada'} y documento Word generado` });
       } else if (type === 'pdf') {
         await generatePdfDocument(ficha);
-        toast({ title: 'Éxito', description: 'Ficha guardada y PDF generado' });
+        toast({ title: 'Éxito', description: `Ficha ${id ? 'actualizada' : 'guardada'} y PDF generado` });
       } else {
         printFicha(ficha);
-        toast({ title: 'Éxito', description: 'Ficha guardada y enviada a impresión' });
+        toast({ title: 'Éxito', description: `Ficha ${id ? 'actualizada' : 'guardada'} y enviada a impresión` });
       }
 
-      // Reset form
-      setNumeroBoleta('');
-      setClienteNombre('');
-      setClienteTelefono('');
-      setSelectedClienteId(null);
-      setModeloMaquina('');
-      setNumeroSerie('');
-      setTipoAveria('');
-      setRepuestos([]);
-      setServicios(DEFAULT_SERVICIOS);
-      setFechaIngreso(new Date());
-      setFechaReparacion(new Date());
-      setFechaEntrega(null);
+      // If we are editing, we don't necessarily want to reset the form, maybe just refresh data or stay there
+      if (!id) {
+        // Reset form only if creating new
+        setNumeroBoleta('');
+        setClienteNombre('');
+        setClienteTelefono('');
+        setSelectedClienteId(null);
+        setModeloMaquina('');
+        setNumeroSerie('');
+        setTipoAveria('');
+        setRepuestos([]);
+        setServicios(DEFAULT_SERVICIOS);
+        setFechaIngreso(new Date());
+        setFechaReparacion(new Date());
+        setFechaEntrega(null);
+      }
       
       // Refresh data
       await loadData();
+      if (id) {
+        // Optionally redirect back or stay
+        // navigate('/'); 
+      }
     } catch (error) {
       console.error('Error:', error);
       toast({ title: 'Error', description: 'Error al generar el documento', variant: 'destructive' });
@@ -170,6 +213,14 @@ const FichaTecnicaPage = () => {
     }
   };
 
+  if (isFetching) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p className="text-muted-foreground">Cargando ficha...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -177,7 +228,7 @@ const FichaTecnicaPage = () => {
       <main className="container mx-auto py-8 px-4">
         <div className="flex items-center gap-3 mb-8">
           <FileText className="h-8 w-8 text-primary" />
-          <h1 className="text-3xl font-heading font-bold">Nueva Ficha Técnica</h1>
+          <h1 className="text-3xl font-heading font-bold">{id ? 'Editar Ficha Técnica' : 'Nueva Ficha Técnica'}</h1>
         </div>
 
         <div className="grid gap-6">
