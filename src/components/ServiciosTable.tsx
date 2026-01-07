@@ -8,7 +8,7 @@ interface Props {
   onServiciosChange: (servicios: ServicioItem[]) => void;
 }
 
-const DEFAULT_SERVICIOS: ServicioItem[] = [
+export const DEFAULT_SERVICIOS: ServicioItem[] = [
   { nombre: 'LIMPIEZA DEL EQUIPO', revision: false, reparacion: false },
   { nombre: 'FILTRO AIRE', revision: false, reparacion: false },
   { nombre: 'FILTRO COMBUSTIBLE', revision: false, reparacion: false },
