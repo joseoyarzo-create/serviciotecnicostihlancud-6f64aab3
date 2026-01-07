@@ -1,9 +1,12 @@
 import { Link, useLocation } from 'react-router-dom';
-import { FileText, Package, Home } from 'lucide-react';
+import { FileText, Package, Home, LogOut } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { Button } from '@/components/ui/button';
 import stihlLogo from '@/assets/stihl-logo.jpg';
 
 const Header = () => {
   const location = useLocation();
+  const { signOut, user } = useAuth();
 
   const navItems = [
     { path: '/', label: 'Inicio', icon: Home },
@@ -22,27 +25,41 @@ const Header = () => {
           </div>
         </Link>
         
-        <nav className="flex items-center gap-1">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = location.pathname === item.path;
-            
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 ${
-                  isActive
-                    ? 'bg-primary text-primary-foreground'
-                    : 'hover:bg-secondary-foreground/10'
-                }`}
-              >
-                <Icon className="h-4 w-4" />
-                <span className="hidden sm:inline font-medium">{item.label}</span>
-              </Link>
-            );
-          })}
-        </nav>
+        <div className="flex items-center gap-4">
+          <nav className="flex items-center gap-1">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = location.pathname === item.path;
+              
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 ${
+                    isActive
+                      ? 'bg-primary text-primary-foreground'
+                      : 'hover:bg-secondary-foreground/10'
+                  }`}
+                >
+                  <Icon className="h-4 w-4" />
+                  <span className="hidden sm:inline font-medium">{item.label}</span>
+                </Link>
+              );
+            })}
+          </nav>
+          
+          {user && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={signOut}
+              className="flex items-center gap-2"
+            >
+              <LogOut className="h-4 w-4" />
+              <span className="hidden sm:inline">Salir</span>
+            </Button>
+          )}
+        </div>
       </div>
     </header>
   );
