@@ -304,3 +304,38 @@ export const incrementContador = async (): Promise<void> => {
 export const generateId = (): string => {
   return crypto.randomUUID();
 };
+
+export const getNextFolio = async (): Promise<string> => {
+  try {
+    const { data, error } = await supabase
+      .from('fichas')
+      .select('numero_boleta')
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    if (error) {
+      console.error('Error fetching last folio:', error);
+      return '';
+    }
+
+    if (data && data.length > 0) {
+      const lastBoleta = data[0].numero_boleta;
+      // Try to extract the last sequence of digits
+      const match = lastBoleta.match(/(\d+)$/);
+      if (match) {
+        const num = parseInt(match[1], 10);
+        return (num + 1).toString();
+      }
+      // If it's a number but parsed simply
+      const simpleNum = parseInt(lastBoleta, 10);
+      if (!isNaN(simpleNum)) {
+        return (simpleNum + 1).toString();
+      }
+    }
+    
+    return '1';
+  } catch (error) {
+    console.error('Error in getNextFolio:', error);
+    return '';
+  }
+};

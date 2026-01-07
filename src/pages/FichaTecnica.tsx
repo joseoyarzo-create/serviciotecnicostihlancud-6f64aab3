@@ -84,12 +84,25 @@ const FichaTecnicaPage = () => {
 
   const loadData = async () => {
     try {
-      const [clientesData, modelosData] = await Promise.all([
+      const promises: Promise<any>[] = [
         getClientes(),
         getModelos(),
-      ]);
+      ];
+
+      if (!id) {
+        promises.push(getNextFolio());
+      }
+
+      const results = await Promise.all(promises);
+      const clientesData = results[0];
+      const modelosData = results[1];
+      
       setClientes(clientesData);
-      setModelos(modelosData.map((m) => m.modelo));
+      setModelos(modelosData.map((m: any) => m.modelo));
+
+      if (!id && results[2]) {
+        setNumeroBoleta(results[2]);
+      }
     } catch (error) {
       console.error('Error loading data:', error);
       toast({ title: 'Error', description: 'Error al cargar datos', variant: 'destructive' });

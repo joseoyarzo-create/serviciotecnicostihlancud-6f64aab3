@@ -31,16 +31,17 @@ const Index = () => {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const [allFichas, repuestos, clientes] = await Promise.all([
+      const [allFichasData, repuestos, clientes] = await Promise.all([
         getFichas(),
         getRepuestos(),
         getClientes(),
       ]);
-      setFichas(allFichas.slice(0, 5));
+      setAllFichas(allFichasData);
+      setFichas(allFichasData.slice(0, 5));
       setStats({
         repuestos: repuestos.length,
         clientes: clientes.length,
-        fichas: allFichas.length,
+        fichas: allFichasData.length,
       });
     } catch (error) {
       console.error('Error loading data:', error);
@@ -176,10 +177,21 @@ const Index = () => {
 
         {/* Recent Fichas */}
         <section className="form-section animate-fade-in" style={{ animationDelay: '0.6s' }}>
-          <h2 className="form-section-title flex items-center gap-2">
-            <Clock className="h-5 w-5" />
-            Fichas Recientes
-          </h2>
+          <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+            <h2 className="form-section-title flex items-center gap-2 mb-0">
+              <Clock className="h-5 w-5" />
+              {searchTerm ? 'Resultados de búsqueda' : 'Fichas Recientes'}
+            </h2>
+            <div className="relative w-full md:w-72">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar por boleta, cliente..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+          </div>
           
           {isLoading ? (
             <p className="text-center text-muted-foreground py-8">
