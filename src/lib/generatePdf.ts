@@ -118,7 +118,7 @@ export const generatePdfDocument = async (ficha: FichaTecnica): Promise<void> =>
     head: [[{ content: 'DATOS DEL EQUIPO', colSpan: 4, styles: { halign: 'left', fillColor: [230, 230, 230], textColor: 0 } }]],
     body: [
       [{ content: 'MODELO', styles: { fontStyle: 'bold' } }, ficha.modeloMaquina, { content: 'N° SERIE', styles: { fontStyle: 'bold' } }, ficha.numeroSerie],
-      [{ content: 'NOMBRE', styles: { fontStyle: 'bold' } }, ficha.cliente.nombre, '', ''],
+      [{ content: 'NOMBRE', styles: { fontStyle: 'bold' } }, ficha.cliente.nombre, { content: 'ESTADO', styles: { fontStyle: 'bold' } }, ficha.estado || 'TALLER'],
       [{ content: 'TELEFONO', styles: { fontStyle: 'bold' } }, ficha.cliente.telefono, { content: 'N° BOLETA', styles: { fontStyle: 'bold' } }, ficha.numeroBoleta],
     ],
     theme: 'grid',

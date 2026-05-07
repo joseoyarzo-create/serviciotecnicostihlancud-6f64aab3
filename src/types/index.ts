@@ -42,6 +42,8 @@ export interface FichaTecnica {
   recomendaciones: string;
   tecnico: 'JORGE' | 'JEAN';
   fechaEntrega: Date | null;
+  estado: 'TALLER' | 'ENTREGADA';
 }
 
 export type Tecnico = 'JORGE' | 'JEAN';
+export type EstadoFicha = 'TALLER' | 'ENTREGADA';

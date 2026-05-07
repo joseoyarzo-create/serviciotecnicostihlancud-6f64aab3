@@ -176,6 +176,7 @@ export const getFichas = async (): Promise<FichaTecnica[]> => {
     servicios: (Array.isArray(f.servicios) ? f.servicios : []) as unknown as ServicioItem[],
     recomendaciones: 'REPARACIÓN GARANTIZADA POR 10 DÍAS DE LA FECHA DE RETIRO',
     tecnico: f.mecanico as 'JORGE' | 'JEAN',
+    estado: (f.cliente_direccion === 'ENTREGADA' ? 'ENTREGADA' : 'TALLER') as 'TALLER' | 'ENTREGADA',
   }));
 };
 
@@ -210,6 +211,7 @@ export const getFichaById = async (id: string): Promise<FichaTecnica | null> => 
     servicios: (Array.isArray(data.servicios) ? data.servicios : []) as unknown as ServicioItem[],
     recomendaciones: 'REPARACIÓN GARANTIZADA POR 10 DÍAS DE LA FECHA DE RETIRO',
     tecnico: data.mecanico as 'JORGE' | 'JEAN',
+    estado: (data.cliente_direccion === 'ENTREGADA' ? 'ENTREGADA' : 'TALLER') as 'TALLER' | 'ENTREGADA',
   };
 };
 
@@ -227,6 +229,7 @@ export const saveFicha = async (ficha: FichaTecnica): Promise<void> => {
     repuestos: JSON.parse(JSON.stringify(ficha.repuestos)) as Json,
     servicios: JSON.parse(JSON.stringify(ficha.servicios)) as Json,
     observaciones: ficha.tipoAveria,
+    cliente_direccion: ficha.estado,
   };
 
   // Check if ficha exists
@@ -254,6 +257,25 @@ export const saveFicha = async (ficha: FichaTecnica): Promise<void> => {
   
   if (error) {
     console.error('Error saving ficha:', error);
+    throw error;
+  }
+};
+
+export const updateFichaEstado = async (id: string, estado: 'TALLER' | 'ENTREGADA'): Promise<void> => {
+  const updateData: Record<string, unknown> = { cliente_direccion: estado };
+  
+  // Si se cambia a ENTREGADA, también podemos establecer la fecha de entrega si no existe
+  if (estado === 'ENTREGADA') {
+    updateData.fecha_entrega = new Date().toISOString();
+  }
+
+  const { error } = await supabase
+    .from('fichas')
+    .update(updateData)
+    .eq('id', id);
+  
+  if (error) {
+    console.error('Error updating ficha estado:', error);
     throw error;
   }
 };

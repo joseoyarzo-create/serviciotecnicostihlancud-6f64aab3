@@ -91,6 +91,7 @@ export const getFichas = (): FichaTecnica[] => {
     fechaIngreso: new Date(f.fechaIngreso),
     fechaReparacion: f.fechaReparacion ? new Date(f.fechaReparacion) : null,
     fechaEntrega: f.fechaEntrega ? new Date(f.fechaEntrega) : null,
+    estado: f.estado || 'TALLER',
   }));
 };
 

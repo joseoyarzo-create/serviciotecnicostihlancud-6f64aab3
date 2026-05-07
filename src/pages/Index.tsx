@@ -1,16 +1,18 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FichaTecnica } from '@/types';
-import { getFichas, getRepuestos, getClientes, deleteFicha } from '@/lib/cloudStorage';
+import { FichaTecnica, EstadoFicha } from '@/types';
+import { getFichas, getRepuestos, getClientes, deleteFicha, updateFichaEstado } from '@/lib/cloudStorage';
 import { generateWordDocument } from '@/lib/generateWord';
 import { generatePdfDocument, printFicha } from '@/lib/generatePdf';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import Header from '@/components/Header';
-import { FileText, Package, Users, Wrench, Plus, Download, Trash2, Clock, FileDown, Printer } from 'lucide-react';
+import { FileText, Package, Users, Wrench, Plus, Download, Trash2, Clock, FileDown, Printer, Search, Edit, CheckCircle, RotateCcw } from 'lucide-react';
 import stihlLogo from '@/assets/stihl-logo.jpg';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { Input } from '@/components/ui/input';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,13 +22,28 @@ import {
 
 const Index = () => {
   const { toast } = useToast();
+  const [allFichas, setAllFichas] = useState<FichaTecnica[]>([]);
   const [fichas, setFichas] = useState<FichaTecnica[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [stats, setStats] = useState({ repuestos: 0, clientes: 0, fichas: 0 });
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     loadData();
   }, []);
+
+  useEffect(() => {
+    if (searchTerm.trim() === '') {
+      setFichas(allFichas.slice(0, 10));
+    } else {
+      const filtered = allFichas.filter(f => 
+        f.numeroBoleta.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        f.cliente.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        f.modeloMaquina.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      setFichas(filtered);
+    }
+  }, [searchTerm, allFichas]);
 
   const loadData = async () => {
     setIsLoading(true);
@@ -37,7 +54,7 @@ const Index = () => {
         getClientes(),
       ]);
       setAllFichas(allFichasData);
-      setFichas(allFichasData.slice(0, 5));
+      setFichas(allFichasData.slice(0, 10));
       setStats({
         repuestos: repuestos.length,
         clientes: clientes.length,
@@ -48,6 +65,19 @@ const Index = () => {
       toast({ title: 'Error', description: 'Error al cargar datos', variant: 'destructive' });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleStatusChange = async (id: string, nuevoEstado: EstadoFicha) => {
+    try {
+      await updateFichaEstado(id, nuevoEstado);
+      toast({ 
+        title: 'Estado actualizado', 
+        description: `La ficha ha sido marcada como ${nuevoEstado === 'ENTREGADA' ? 'entregada' : 'en taller'}` 
+      });
+      await loadData();
+    } catch (error) {
+      toast({ title: 'Error', description: 'No se pudo actualizar el estado', variant: 'destructive' });
     }
   };
 
@@ -211,6 +241,7 @@ const Index = () => {
                     <th>MODELO</th>
                     <th>FECHA</th>
                     <th>TÉCNICO</th>
+                    <th>ESTADO</th>
                     <th>ACCIONES</th>
                   </tr>
                 </thead>
@@ -222,6 +253,14 @@ const Index = () => {
                       <td>{ficha.modeloMaquina}</td>
                       <td>{format(ficha.fechaIngreso, 'dd/MM/yyyy', { locale: es })}</td>
                       <td>{ficha.tecnico}</td>
+                      <td>
+                        <Badge 
+                          variant={ficha.estado === 'ENTREGADA' ? 'default' : 'secondary'}
+                          className={ficha.estado === 'ENTREGADA' ? 'bg-green-500 hover:bg-green-600' : 'bg-orange-500 hover:bg-orange-600 text-white'}
+                        >
+                          {ficha.estado || 'TALLER'}
+                        </Badge>
+                      </td>
                       <td>
                         <div className="flex gap-1">
                           <DropdownMenu>
@@ -236,6 +275,19 @@ const Index = () => {
                                   <Edit className="mr-2 h-4 w-4" />
                                   Editar
                                 </Link>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleStatusChange(ficha.id, ficha.estado === 'ENTREGADA' ? 'TALLER' : 'ENTREGADA')}>
+                                {ficha.estado === 'ENTREGADA' ? (
+                                  <>
+                                    <RotateCcw className="mr-2 h-4 w-4" />
+                                    Cambiar a Taller
+                                  </>
+                                ) : (
+                                  <>
+                                    <CheckCircle className="mr-2 h-4 w-4" />
+                                    Marcar como Entregada
+                                  </>
+                                )}
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => handleDownloadWord(ficha)}>
                                 <FileText className="mr-2 h-4 w-4" />

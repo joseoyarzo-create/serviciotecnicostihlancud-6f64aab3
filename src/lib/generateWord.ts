@@ -201,6 +201,26 @@ export const generateWordDocument = async (ficha: FichaTecnica): Promise<void> =
           }),
         ],
       }),
+      new TableRow({
+        children: [
+          new TableCell({
+            children: [new Paragraph({ children: [new TextRun({ text: 'MECÁNICO:', bold: true })] })],
+            borders: createTableBorders(),
+          }),
+          new TableCell({
+            children: [new Paragraph({ text: ficha.tecnico })],
+            borders: createTableBorders(),
+          }),
+          new TableCell({
+            children: [new Paragraph({ children: [new TextRun({ text: 'ESTADO:', bold: true })] })],
+            borders: createTableBorders(),
+          }),
+          new TableCell({
+            children: [new Paragraph({ text: ficha.estado || 'TALLER' })],
+            borders: createTableBorders(),
+          }),
+        ],
+      }),
     ],
   });
 

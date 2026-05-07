@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { FichaTecnica, Cliente, RepuestoFicha, Tecnico } from '@/types';
+import { FichaTecnica, Cliente, RepuestoFicha, Tecnico, EstadoFicha } from '@/types';
 import { getClientes, saveCliente, saveFicha, generateId, getModelos, saveModelo, getFichaById } from '@/lib/cloudStorage';
 import { generateWordDocument } from '@/lib/generateWord';
 import { generatePdfDocument, printFicha } from '@/lib/generatePdf';
@@ -45,6 +45,7 @@ const FichaTecnicaPage = () => {
   const [repuestos, setRepuestos] = useState<RepuestoFicha[]>([]);
   const [servicios, setServicios] = useState(DEFAULT_SERVICIOS);
   const [tecnico, setTecnico] = useState<Tecnico>('JORGE');
+  const [estado, setEstado] = useState<EstadoFicha>('TALLER');
 
   useEffect(() => {
     loadData();
@@ -70,6 +71,7 @@ const FichaTecnicaPage = () => {
         setRepuestos(ficha.repuestos);
         setServicios(ficha.servicios.length > 0 ? ficha.servicios : DEFAULT_SERVICIOS);
         setTecnico(ficha.tecnico);
+        setEstado(ficha.estado || 'TALLER');
       } else {
         toast({ title: 'Error', description: 'Ficha no encontrada', variant: 'destructive' });
         navigate('/');
@@ -179,6 +181,7 @@ const FichaTecnicaPage = () => {
         recomendaciones: 'REPARACIÓN GARANTIZADA POR 10 DÍAS DE LA FECHA DE RETIRO',
         tecnico,
         fechaEntrega,
+        estado,
       };
 
       await saveFicha(ficha);
@@ -210,6 +213,7 @@ const FichaTecnicaPage = () => {
         setFechaIngreso(new Date());
         setFechaReparacion(new Date());
         setFechaEntrega(null);
+        setEstado('TALLER');
       }
       
       // Refresh data
@@ -447,23 +451,36 @@ const FichaTecnicaPage = () => {
             />
           </section>
 
-          {/* Técnico */}
+          {/* Técnico y Estado */}
           <section className="form-section animate-fade-in" style={{ animationDelay: '0.5s' }}>
-            <h2 className="form-section-title">Mecánico Encargado</h2>
-            <RadioGroup
-              value={tecnico}
-              onValueChange={(value) => setTecnico(value as Tecnico)}
-              className="flex gap-6"
-            >
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="JORGE" id="jorge" />
-                <Label htmlFor="jorge" className="cursor-pointer font-medium">JORGE</Label>
+            <h2 className="form-section-title">Mecánico y Estado</h2>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="input-group">
+                <Label className="input-label">Mecánico *</Label>
+                <Select value={tecnico} onValueChange={(value: Tecnico) => setTecnico(value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccione mecánico" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="JORGE">JORGE</SelectItem>
+                    <SelectItem value="JEAN">JEAN</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="JEAN" id="jean" />
-                <Label htmlFor="jean" className="cursor-pointer font-medium">JEAN</Label>
+
+              <div className="input-group">
+                <Label className="input-label">Estado de la Máquina *</Label>
+                <Select value={estado} onValueChange={(value: EstadoFicha) => setEstado(value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccione estado" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="TALLER">EN TALLER</SelectItem>
+                    <SelectItem value="ENTREGADA">ENTREGADA</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-            </RadioGroup>
+            </div>
           </section>
 
           {/* Garantía */}
