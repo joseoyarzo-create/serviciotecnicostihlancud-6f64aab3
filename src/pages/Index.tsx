@@ -7,7 +7,8 @@ import { generatePdfDocument, printFicha } from '@/lib/generatePdf';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import Header from '@/components/Header';
-import { FileText, Package, Users, Wrench, Plus, Download, Trash2, Clock, FileDown, Printer } from 'lucide-react';
+import { FileText, Package, Users, Wrench, Plus, Download, Trash2, Clock, FileDown, Printer, Search, Edit } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import stihlLogo from '@/assets/stihl-logo.jpg';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -21,12 +22,29 @@ import {
 const Index = () => {
   const { toast } = useToast();
   const [fichas, setFichas] = useState<FichaTecnica[]>([]);
+  const [allFichas, setAllFichas] = useState<FichaTecnica[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [stats, setStats] = useState({ repuestos: 0, clientes: 0, fichas: 0 });
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     loadData();
   }, []);
+
+  useEffect(() => {
+    if (!searchTerm.trim()) {
+      setFichas(allFichas.slice(0, 5));
+    } else {
+      const term = searchTerm.toLowerCase();
+      setFichas(
+        allFichas.filter(
+          (f) =>
+            f.numeroBoleta.toLowerCase().includes(term) ||
+            f.cliente.nombre.toLowerCase().includes(term)
+        )
+      );
+    }
+  }, [searchTerm, allFichas]);
 
   const loadData = async () => {
     setIsLoading(true);

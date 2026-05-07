@@ -1,6 +1,40 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Cliente, Repuesto, FichaTecnica, ServicioItem, RepuestoFicha } from '@/types';
 import type { Json } from '@/integrations/supabase/types';
+import { z } from 'zod';
+
+// Validation schemas
+const ClienteSchema = z.object({
+  id: z.string().min(1),
+  nombre: z.string().trim().min(1, 'Nombre requerido').max(200),
+  telefono: z.string().trim().max(50).optional().or(z.literal('')),
+});
+
+const RepuestoSchema = z.object({
+  id: z.string().min(1),
+  codigo: z.string().trim().min(1, 'Código requerido').max(100),
+  nombre: z.string().trim().min(1, 'Nombre requerido').max(300),
+  precio: z.number().nonnegative('Precio inválido').max(100000000),
+});
+
+const ModeloSchema = z.object({
+  id: z.string().min(1),
+  modelo: z.string().trim().min(1, 'Modelo requerido').max(200),
+});
+
+const FichaSchema = z.object({
+  id: z.string().min(1),
+  numeroBoleta: z.string().trim().min(1).max(50),
+  modeloMaquina: z.string().trim().min(1).max(200),
+  numeroSerie: z.string().trim().max(100).optional().or(z.literal('')),
+  tipoAveria: z.string().trim().max(2000).optional().or(z.literal('')),
+  tecnico: z.enum(['JORGE', 'JEAN']),
+  cliente: z.object({
+    nombre: z.string().trim().min(1).max(200),
+    telefono: z.string().trim().max(50).optional().or(z.literal('')),
+  }),
+});
+
 
 // Clientes
 export const getClientes = async (): Promise<Cliente[]> => {
@@ -10,7 +44,7 @@ export const getClientes = async (): Promise<Cliente[]> => {
     .order('nombre');
   
   if (error) {
-    console.error('Error fetching clientes:', error);
+    // error logged silently;
     return [];
   }
   
@@ -22,18 +56,16 @@ export const getClientes = async (): Promise<Cliente[]> => {
 };
 
 export const saveCliente = async (cliente: Cliente): Promise<void> => {
+  const validated = ClienteSchema.parse(cliente);
   const { error } = await supabase
     .from('clientes')
     .upsert({
-      id: cliente.id,
-      nombre: cliente.nombre,
-      telefono: cliente.telefono,
+      id: validated.id,
+      nombre: validated.nombre,
+      telefono: validated.telefono || null,
     }, { onConflict: 'id' });
   
-  if (error) {
-    console.error('Error saving cliente:', error);
-    throw error;
-  }
+  if (error) throw new Error('No se pudo guardar el cliente');
 };
 
 // Repuestos
@@ -44,7 +76,7 @@ export const getRepuestos = async (): Promise<Repuesto[]> => {
     .order('nombre');
   
   if (error) {
-    console.error('Error fetching repuestos:', error);
+    // error logged silently;
     return [];
   }
   
@@ -57,45 +89,44 @@ export const getRepuestos = async (): Promise<Repuesto[]> => {
 };
 
 export const saveRepuesto = async (repuesto: Repuesto): Promise<void> => {
+  const validated = RepuestoSchema.parse(repuesto);
   const { error } = await supabase
     .from('repuestos')
     .upsert({
-      id: repuesto.id,
-      codigo: repuesto.codigo,
-      nombre: repuesto.nombre,
-      precio: repuesto.precio,
+      id: validated.id,
+      codigo: validated.codigo,
+      nombre: validated.nombre,
+      precio: validated.precio,
     }, { onConflict: 'id' });
   
-  if (error) {
-    console.error('Error saving repuesto:', error);
-    throw error;
-  }
+  if (error) throw new Error('No se pudo guardar el repuesto');
 };
 
 export const saveRepuestosBulk = async (nuevosRepuestos: Repuesto[]): Promise<void> => {
   for (const repuesto of nuevosRepuestos) {
+    const validated = RepuestoSchema.parse(repuesto);
     const { data: existing } = await supabase
       .from('repuestos')
       .select('id')
-      .eq('codigo', repuesto.codigo)
+      .eq('codigo', validated.codigo)
       .maybeSingle();
     
     if (existing) {
       await supabase
         .from('repuestos')
         .update({
-          nombre: repuesto.nombre,
-          precio: repuesto.precio,
+          nombre: validated.nombre,
+          precio: validated.precio,
         })
         .eq('id', existing.id);
     } else {
       await supabase
         .from('repuestos')
         .insert({
-          id: repuesto.id,
-          codigo: repuesto.codigo,
-          nombre: repuesto.nombre,
-          precio: repuesto.precio,
+          id: validated.id,
+          codigo: validated.codigo,
+          nombre: validated.nombre,
+          precio: validated.precio,
         });
     }
   }
@@ -108,7 +139,7 @@ export const deleteRepuesto = async (id: string): Promise<void> => {
     .eq('id', id);
   
   if (error) {
-    console.error('Error deleting repuesto:', error);
+    // error logged silently;
     throw error;
   }
 };
@@ -121,7 +152,7 @@ export const getModelos = async (): Promise<{ id: string; modelo: string }[]> =>
     .order('nombre');
   
   if (error) {
-    console.error('Error fetching modelos:', error);
+    // error logged silently;
     return [];
   }
   
@@ -132,17 +163,15 @@ export const getModelos = async (): Promise<{ id: string; modelo: string }[]> =>
 };
 
 export const saveModelo = async (modelo: { id: string; modelo: string }): Promise<void> => {
+  const validated = ModeloSchema.parse(modelo);
   const { error } = await supabase
     .from('modelos')
     .upsert({
-      id: modelo.id,
-      nombre: modelo.modelo,
+      id: validated.id,
+      nombre: validated.modelo,
     }, { onConflict: 'id' });
   
-  if (error) {
-    console.error('Error saving modelo:', error);
-    throw error;
-  }
+  if (error) throw new Error('No se pudo guardar el modelo');
 };
 
 // Fichas Técnicas
@@ -153,7 +182,7 @@ export const getFichas = async (): Promise<FichaTecnica[]> => {
     .order('created_at', { ascending: false });
   
   if (error) {
-    console.error('Error fetching fichas:', error);
+    // error logged silently;
     return [];
   }
   
@@ -187,7 +216,7 @@ export const getFichaById = async (id: string): Promise<FichaTecnica | null> => 
     .single();
   
   if (error) {
-    console.error('Error fetching ficha:', error);
+    // error logged silently;
     return null;
   }
   
@@ -214,6 +243,7 @@ export const getFichaById = async (id: string): Promise<FichaTecnica | null> => 
 };
 
 export const saveFicha = async (ficha: FichaTecnica): Promise<void> => {
+  FichaSchema.parse(ficha);
   const fichaData = {
     numero_boleta: ficha.numeroBoleta,
     fecha_ingreso: ficha.fechaIngreso.toISOString(),
@@ -229,7 +259,6 @@ export const saveFicha = async (ficha: FichaTecnica): Promise<void> => {
     observaciones: ficha.tipoAveria,
   };
 
-  // Check if ficha exists
   const { data: existing } = await supabase
     .from('fichas')
     .select('id')
@@ -252,10 +281,7 @@ export const saveFicha = async (ficha: FichaTecnica): Promise<void> => {
     error = result.error;
   }
   
-  if (error) {
-    console.error('Error saving ficha:', error);
-    throw error;
-  }
+  if (error) throw new Error('No se pudo guardar la ficha');
 };
 
 export const deleteFicha = async (id: string): Promise<void> => {
@@ -265,7 +291,7 @@ export const deleteFicha = async (id: string): Promise<void> => {
     .eq('id', id);
   
   if (error) {
-    console.error('Error deleting ficha:', error);
+    // error logged silently;
     throw error;
   }
 };
@@ -279,7 +305,7 @@ export const getNextNumero = async (): Promise<number> => {
     .single();
   
   if (error) {
-    console.error('Error fetching contador:', error);
+    // error logged silently;
     return 1;
   }
   
@@ -295,7 +321,7 @@ export const incrementContador = async (): Promise<void> => {
     .eq('id', 'boleta');
   
   if (error) {
-    console.error('Error incrementing contador:', error);
+    // error logged silently;
     throw error;
   }
 };
@@ -314,7 +340,7 @@ export const getNextFolio = async (): Promise<string> => {
       .limit(1);
 
     if (error) {
-      console.error('Error fetching last folio:', error);
+      // error logged silently;
       return '';
     }
 
@@ -335,7 +361,7 @@ export const getNextFolio = async (): Promise<string> => {
     
     return '1';
   } catch (error) {
-    console.error('Error in getNextFolio:', error);
+    // error logged silently;
     return '';
   }
 };
