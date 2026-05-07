@@ -41,10 +41,10 @@ const Login = () => {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold text-primary">
-            Sistema de Fichas Técnicas
+            STIHL ANCUD - Sistema de Taller
           </CardTitle>
           <CardDescription>
-            Inicia sesión para continuar
+            Inicia sesión para gestionar fichas y estados
           </CardDescription>
         </CardHeader>
         <CardContent>
