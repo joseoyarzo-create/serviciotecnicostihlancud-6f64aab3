@@ -243,6 +243,7 @@ export const getFichaById = async (id: string): Promise<FichaTecnica | null> => 
 };
 
 export const saveFicha = async (ficha: FichaTecnica): Promise<void> => {
+  FichaSchema.parse(ficha);
   const fichaData = {
     numero_boleta: ficha.numeroBoleta,
     fecha_ingreso: ficha.fechaIngreso.toISOString(),
@@ -258,7 +259,6 @@ export const saveFicha = async (ficha: FichaTecnica): Promise<void> => {
     observaciones: ficha.tipoAveria,
   };
 
-  // Check if ficha exists
   const { data: existing } = await supabase
     .from('fichas')
     .select('id')
@@ -281,10 +281,7 @@ export const saveFicha = async (ficha: FichaTecnica): Promise<void> => {
     error = result.error;
   }
   
-  if (error) {
-    // error logged silently;
-    throw error;
-  }
+  if (error) throw new Error('No se pudo guardar la ficha');
 };
 
 export const deleteFicha = async (id: string): Promise<void> => {
