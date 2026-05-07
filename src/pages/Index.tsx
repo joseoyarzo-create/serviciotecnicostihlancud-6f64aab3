@@ -31,6 +31,21 @@ const Index = () => {
     loadData();
   }, []);
 
+  useEffect(() => {
+    if (!searchTerm.trim()) {
+      setFichas(allFichas.slice(0, 5));
+    } else {
+      const term = searchTerm.toLowerCase();
+      setFichas(
+        allFichas.filter(
+          (f) =>
+            f.numeroBoleta.toLowerCase().includes(term) ||
+            f.cliente.nombre.toLowerCase().includes(term)
+        )
+      );
+    }
+  }, [searchTerm, allFichas]);
+
   const loadData = async () => {
     setIsLoading(true);
     try {
