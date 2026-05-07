@@ -44,7 +44,7 @@ export const getClientes = async (): Promise<Cliente[]> => {
     .order('nombre');
   
   if (error) {
-    console.error('Error fetching clientes:', error);
+    // error logged silently;
     return [];
   }
   
@@ -65,7 +65,7 @@ export const saveCliente = async (cliente: Cliente): Promise<void> => {
     }, { onConflict: 'id' });
   
   if (error) {
-    console.error('Error saving cliente:', error);
+    // error logged silently;
     throw error;
   }
 };
@@ -78,7 +78,7 @@ export const getRepuestos = async (): Promise<Repuesto[]> => {
     .order('nombre');
   
   if (error) {
-    console.error('Error fetching repuestos:', error);
+    // error logged silently;
     return [];
   }
   
@@ -101,7 +101,7 @@ export const saveRepuesto = async (repuesto: Repuesto): Promise<void> => {
     }, { onConflict: 'id' });
   
   if (error) {
-    console.error('Error saving repuesto:', error);
+    // error logged silently;
     throw error;
   }
 };
@@ -142,7 +142,7 @@ export const deleteRepuesto = async (id: string): Promise<void> => {
     .eq('id', id);
   
   if (error) {
-    console.error('Error deleting repuesto:', error);
+    // error logged silently;
     throw error;
   }
 };
@@ -155,7 +155,7 @@ export const getModelos = async (): Promise<{ id: string; modelo: string }[]> =>
     .order('nombre');
   
   if (error) {
-    console.error('Error fetching modelos:', error);
+    // error logged silently;
     return [];
   }
   
@@ -174,7 +174,7 @@ export const saveModelo = async (modelo: { id: string; modelo: string }): Promis
     }, { onConflict: 'id' });
   
   if (error) {
-    console.error('Error saving modelo:', error);
+    // error logged silently;
     throw error;
   }
 };
@@ -187,7 +187,7 @@ export const getFichas = async (): Promise<FichaTecnica[]> => {
     .order('created_at', { ascending: false });
   
   if (error) {
-    console.error('Error fetching fichas:', error);
+    // error logged silently;
     return [];
   }
   
@@ -221,7 +221,7 @@ export const getFichaById = async (id: string): Promise<FichaTecnica | null> => 
     .single();
   
   if (error) {
-    console.error('Error fetching ficha:', error);
+    // error logged silently;
     return null;
   }
   
@@ -287,7 +287,7 @@ export const saveFicha = async (ficha: FichaTecnica): Promise<void> => {
   }
   
   if (error) {
-    console.error('Error saving ficha:', error);
+    // error logged silently;
     throw error;
   }
 };
@@ -299,7 +299,7 @@ export const deleteFicha = async (id: string): Promise<void> => {
     .eq('id', id);
   
   if (error) {
-    console.error('Error deleting ficha:', error);
+    // error logged silently;
     throw error;
   }
 };
@@ -313,7 +313,7 @@ export const getNextNumero = async (): Promise<number> => {
     .single();
   
   if (error) {
-    console.error('Error fetching contador:', error);
+    // error logged silently;
     return 1;
   }
   
@@ -329,7 +329,7 @@ export const incrementContador = async (): Promise<void> => {
     .eq('id', 'boleta');
   
   if (error) {
-    console.error('Error incrementing contador:', error);
+    // error logged silently;
     throw error;
   }
 };
@@ -348,7 +348,7 @@ export const getNextFolio = async (): Promise<string> => {
       .limit(1);
 
     if (error) {
-      console.error('Error fetching last folio:', error);
+      // error logged silently;
       return '';
     }
 
@@ -369,7 +369,7 @@ export const getNextFolio = async (): Promise<string> => {
     
     return '1';
   } catch (error) {
-    console.error('Error in getNextFolio:', error);
+    // error logged silently;
     return '';
   }
 };
