@@ -163,17 +163,15 @@ export const getModelos = async (): Promise<{ id: string; modelo: string }[]> =>
 };
 
 export const saveModelo = async (modelo: { id: string; modelo: string }): Promise<void> => {
+  const validated = ModeloSchema.parse(modelo);
   const { error } = await supabase
     .from('modelos')
     .upsert({
-      id: modelo.id,
-      nombre: modelo.modelo,
+      id: validated.id,
+      nombre: validated.modelo,
     }, { onConflict: 'id' });
   
-  if (error) {
-    // error logged silently;
-    throw error;
-  }
+  if (error) throw new Error('No se pudo guardar el modelo');
 };
 
 // Fichas Técnicas
