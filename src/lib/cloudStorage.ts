@@ -122,7 +122,12 @@ export const saveRepuestosBulk = async (nuevosRepuestos: Repuesto[]): Promise<vo
     } else {
       await supabase
         .from('repuestos')
-        .insert(validated);
+        .insert({
+          id: validated.id,
+          codigo: validated.codigo,
+          nombre: validated.nombre,
+          precio: validated.precio,
+        });
     }
   }
 };
