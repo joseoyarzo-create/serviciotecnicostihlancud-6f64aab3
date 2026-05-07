@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FichaTecnica, EstadoFicha } from '@/types';
-import { getFichas, getRepuestos, getClientes, deleteFicha, updateFichaEstado } from '@/lib/cloudStorage';
+import { getFichas, getRepuestos, getClientes, deleteFicha, updateFichaEstado, getModelos } from '@/lib/cloudStorage';
 import { generateWordDocument } from '@/lib/generateWord';
 import { generatePdfDocument, printFicha } from '@/lib/generatePdf';
 import { Button } from '@/components/ui/button';
@@ -99,6 +99,40 @@ const Index = () => {
     }
   };
 
+  const handleExportData = async () => {
+    try {
+      const [allFichasData, repuestos, clientes, modelos] = await Promise.all([
+        getFichas(),
+        getRepuestos(),
+        getClientes(),
+        getModelos(),
+      ]);
+
+      const exportData = {
+        fichas: allFichasData,
+        repuestos,
+        clientes,
+        modelos,
+        exportDate: new Date().toISOString(),
+      };
+
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `respaldo_taller_stihl_${format(new Date(), 'yyyy-MM-dd')}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      toast({ title: 'Éxito', description: 'Respaldo de datos generado y descargado' });
+    } catch (error) {
+      console.error('Error exportando datos:', error);
+      toast({ title: 'Error', description: 'Error al exportar datos', variant: 'destructive' });
+    }
+  };
+
   const handlePrint = (ficha: FichaTecnica) => {
     try {
       printFicha(ficha);
@@ -139,6 +173,12 @@ const Index = () => {
           <p className="text-muted-foreground">
             Pudeto 351 - Ancud | Fono Fax: 652622214
           </p>
+          <div className="mt-4 flex justify-center gap-2">
+            <Button variant="outline" size="sm" onClick={handleExportData} className="flex items-center gap-2">
+              <Download className="h-4 w-4" />
+              Descargar Respaldo Completo (JSON)
+            </Button>
+          </div>
         </section>
 
         {/* Stats */}
