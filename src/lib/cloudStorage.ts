@@ -56,18 +56,16 @@ export const getClientes = async (): Promise<Cliente[]> => {
 };
 
 export const saveCliente = async (cliente: Cliente): Promise<void> => {
+  const validated = ClienteSchema.parse(cliente);
   const { error } = await supabase
     .from('clientes')
     .upsert({
-      id: cliente.id,
-      nombre: cliente.nombre,
-      telefono: cliente.telefono,
+      id: validated.id,
+      nombre: validated.nombre,
+      telefono: validated.telefono || null,
     }, { onConflict: 'id' });
   
-  if (error) {
-    // error logged silently;
-    throw error;
-  }
+  if (error) throw new Error('No se pudo guardar el cliente');
 };
 
 // Repuestos
