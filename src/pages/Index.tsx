@@ -165,7 +165,7 @@ const Index = () => {
             <img src={stihlLogo} alt="STIHL" className="h-24 object-contain" />
           </div>
           <h1 className="text-4xl md:text-5xl font-heading font-bold mb-4">
-            Sistema de Taller
+            STIHL ANCUD - Gestión de Taller
           </h1>
           <p className="text-xl text-muted-foreground mb-2">
             STIHL ANCUD - COMERCIAL SOTAVENTO LTDA.
