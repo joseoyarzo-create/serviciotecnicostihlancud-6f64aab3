@@ -89,46 +89,35 @@ export const getRepuestos = async (): Promise<Repuesto[]> => {
 };
 
 export const saveRepuesto = async (repuesto: Repuesto): Promise<void> => {
+  const validated = RepuestoSchema.parse(repuesto);
   const { error } = await supabase
     .from('repuestos')
-    .upsert({
-      id: repuesto.id,
-      codigo: repuesto.codigo,
-      nombre: repuesto.nombre,
-      precio: repuesto.precio,
-    }, { onConflict: 'id' });
+    .upsert(validated, { onConflict: 'id' });
   
-  if (error) {
-    // error logged silently;
-    throw error;
-  }
+  if (error) throw new Error('No se pudo guardar el repuesto');
 };
 
 export const saveRepuestosBulk = async (nuevosRepuestos: Repuesto[]): Promise<void> => {
   for (const repuesto of nuevosRepuestos) {
+    const validated = RepuestoSchema.parse(repuesto);
     const { data: existing } = await supabase
       .from('repuestos')
       .select('id')
-      .eq('codigo', repuesto.codigo)
+      .eq('codigo', validated.codigo)
       .maybeSingle();
     
     if (existing) {
       await supabase
         .from('repuestos')
         .update({
-          nombre: repuesto.nombre,
-          precio: repuesto.precio,
+          nombre: validated.nombre,
+          precio: validated.precio,
         })
         .eq('id', existing.id);
     } else {
       await supabase
         .from('repuestos')
-        .insert({
-          id: repuesto.id,
-          codigo: repuesto.codigo,
-          nombre: repuesto.nombre,
-          precio: repuesto.precio,
-        });
+        .insert(validated);
     }
   }
 };
