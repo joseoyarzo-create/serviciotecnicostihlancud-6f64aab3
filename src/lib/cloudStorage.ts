@@ -1,6 +1,40 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Cliente, Repuesto, FichaTecnica, ServicioItem, RepuestoFicha } from '@/types';
 import type { Json } from '@/integrations/supabase/types';
+import { z } from 'zod';
+
+// Validation schemas
+const ClienteSchema = z.object({
+  id: z.string().min(1),
+  nombre: z.string().trim().min(1, 'Nombre requerido').max(200),
+  telefono: z.string().trim().max(50).optional().or(z.literal('')),
+});
+
+const RepuestoSchema = z.object({
+  id: z.string().min(1),
+  codigo: z.string().trim().min(1, 'Código requerido').max(100),
+  nombre: z.string().trim().min(1, 'Nombre requerido').max(300),
+  precio: z.number().nonnegative('Precio inválido').max(100000000),
+});
+
+const ModeloSchema = z.object({
+  id: z.string().min(1),
+  modelo: z.string().trim().min(1, 'Modelo requerido').max(200),
+});
+
+const FichaSchema = z.object({
+  id: z.string().min(1),
+  numeroBoleta: z.string().trim().min(1).max(50),
+  modeloMaquina: z.string().trim().min(1).max(200),
+  numeroSerie: z.string().trim().max(100).optional().or(z.literal('')),
+  tipoAveria: z.string().trim().max(2000).optional().or(z.literal('')),
+  tecnico: z.enum(['JORGE', 'JEAN']),
+  cliente: z.object({
+    nombre: z.string().trim().min(1).max(200),
+    telefono: z.string().trim().max(50).optional().or(z.literal('')),
+  }),
+});
+
 
 // Clientes
 export const getClientes = async (): Promise<Cliente[]> => {
