@@ -92,7 +92,12 @@ export const saveRepuesto = async (repuesto: Repuesto): Promise<void> => {
   const validated = RepuestoSchema.parse(repuesto);
   const { error } = await supabase
     .from('repuestos')
-    .upsert(validated, { onConflict: 'id' });
+    .upsert({
+      id: validated.id,
+      codigo: validated.codigo,
+      nombre: validated.nombre,
+      precio: validated.precio,
+    }, { onConflict: 'id' });
   
   if (error) throw new Error('No se pudo guardar el repuesto');
 };
