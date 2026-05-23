@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Settings, ShieldAlert, Award, Save, Info } from 'lucide-react';
+import { Settings, ShieldAlert, Award, Info, Wrench, Package } from 'lucide-react';
 
 const Admin = () => {
   const { user } = useAuth();
